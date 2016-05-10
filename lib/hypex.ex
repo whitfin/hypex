@@ -118,7 +118,7 @@ defmodule Hypex do
       raise ArgumentError, message: @merge_err
     end
 
-    registers = Enum.map(hypices, fn({ ^b, registers }) ->
+    registers = Enum.map(hypices, fn({ _b, registers }) ->
       :erlang.bitstring_to_list(registers)
     end)
 
