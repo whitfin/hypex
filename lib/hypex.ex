@@ -1,31 +1,23 @@
 defmodule Hypex do
-  use Bitwise
-
   @moduledoc """
   This module provides an Elixir implementation of HyperLogLog as described within
-  http://algo.inria.fr/flajolet/Publications/FlFuGaMe07.pdf. Current implementation
-  works with an underlying bitstring which acts as the registers in the algorithm.
+  http://algo.inria.fr/flajolet/Publications/FlFuGaMe07.pdf. Various implementations
+  are provided in order to account for performance and memory optimizations.
 
-  A Hypex instance is simply a two-element Tuple, which provides a slight speed
+  A Hypex instance is simply a three-element Tuple, which provides a slight speed
   improvement over using a struct (roughly 10% at last benchmark). This tuple
-  should only ever be constructed via `Hypex.new/1` otherwise you run the risk of
+  should only ever be constructed via `Hypex.new/2` otherwise you run the risk of
   pattern matching errors throughout modification.
   """
 
-  # alias internal modules
+  # alias some internals
   alias Hypex.Util
-
-  # our hash size in bits
-  @hash_length 32
-
-  # the maximum uniques allowed by the hash
-  @max_uniques 1 <<< @hash_length
 
   # cardinality error
   @card2_err "Hypex.cardinality/1 requires a valid Hypex instance"
 
   # merge error
-  @merge_err "Merging requires valid Hypex structures of the same width"
+  @merge_err "Merging requires valid Hypex structures of the same width and type"
 
   # invalid construction error
   @range_err "Invalid width provided, must be 16 >= width >= 4"
@@ -33,39 +25,48 @@ defmodule Hypex do
   # update error
   @update_err "Hypex.update/2 requires a valid Hypex instance"
 
-  # define the Hypex typespec
-  @type hypex :: { number, bitstring }
+  @typedoc """
+  A Hypex interface structure
+  """
+  @opaque t :: { mod :: term, width :: number, register :: Register.t }
 
   @doc """
-  Create a new Hypex using a width `b` when `16 >= b >= 4`.
+  Create a new Hypex using a width when `16 >= width >= 4`.
 
-  We determine the number of internal registers based on `b` as `m` when `m` is
-  equivalent to `2 ^ b`. We then initialize `m` registers with 0 bits and return
-  a Tuple of `{ b, registers }`.
+  The type of register is determined by the module backing the Hypex instance.
+  We normalize to ensure we have a valid module and then initialize the module
+  with the widths.
+
+  Once the registers are initialized, we return them inside a Tuple alongside
+  the width and module name.
 
   ## Examples
 
       iex> Hypex.new(4)
-      { 4, << 0, 0, 0, 0, 0, 0, 0, 0 >> }
+      { Hypex.Array, 4, { :array, 16, 0, 0, 100 } }
+
+      iex> Hypex.new(4, Bitstring)
+      { Hypex.Bitstring, 4, << 0, 0, 0, 0, 0, 0, 0, 0 >> }
 
   """
-  @spec new(number) :: hypex
-  def new(b \\ 16)
-  def new(b) when is_integer(b) and b <= 16 and b >= 4 do
-    m = (1 <<< b) * b
-    { b, << 0 :: size(m) >> }
+  @spec new(width :: number) :: hypex :: Hypex.t
+  def new(width \\ 16, mod \\ nil)
+  def new(width, mod) when is_integer(width) and width <= 16 and width >= 4 do
+    impl = Util.normalize_module(mod)
+    { impl, width, impl.init(width) }
   end
-  def new(_b) do
+  def new(_width, _mod) do
     raise ArgumentError, message: @range_err
   end
 
   @doc """
   Calculates a cardinality based upon a passed in Hypex.
 
-  We use a binary reduce function internally to make this as cheap as possible and
-  we use only a single pass (even if it's a little worse for memory). Corrections
-  are applied per the algorithm definition to account to the bit size of the hash
-  function.
+  We use the reduce function of the module representing the registers, and track
+  the number of zeroes alongside the initial value needed to create a raw estimate.
+
+  Once we have these values we just apply the correction by using the `m` value,
+  the zero count, and the raw estimate.
 
   ## Examples
 
@@ -77,17 +78,17 @@ defmodule Hypex do
       3
 
   """
-  @spec cardinality(hypex) :: number
-  def cardinality({ b, _registers } = hypex) do
-    m = 1 <<< b
+  @spec cardinality(hypex :: Hypex.t) :: cardinality :: number
+  def cardinality({ mod, width, registers } = _hypex) do
+    m = :erlang.bsl(1, width)
 
-    { helper, zeroes } = binary_reduce(hypex, { 0, 0 }, fn(int, { helper, zeroes }) ->
-      { 1 / (1 <<< int) + helper, int == 0 && zeroes + 1 || zeroes }
+    { value, zeroes } = mod.reduce(registers, width, { 0, 0 }, fn(int, { current, zeroes }) ->
+      { 1 / :erlang.bsl(1, int) + current, int == 0 && zeroes + 1 || zeroes }
     end)
 
-    raw_estimate = a(m) * m * m * 1 / helper
+    raw_estimate = Util.a(m) * m * m * 1 / value
 
-    apply_correction(zeroes, m, raw_estimate)
+    Util.apply_correction(m, raw_estimate, zeroes)
   end
   def cardinality(_hypex) do
     raise ArgumentError, message: @card2_err
@@ -96,9 +97,17 @@ defmodule Hypex do
   @doc """
   Merges together many Hypex instances with the same seed.
 
-  This is done in a readable way as opposed to a performant way as it will be only
-  rarely called. We zip up the two input bitstrings and reduce them into a single
-  bitstring, taking the max bit from either and folding it into the reduction.
+  This is done by converting the underlying register structure to a list of bits
+  and taking the max of each index into a new list, before converting back into
+  the register structure.
+
+  We accept an arbitrary number of Hypex instances to merge and due to the use
+  of List zipping this comes naturally. We catch empty and single entry Lists to
+  avoid wasting computation.
+
+  If you have a scenario in which you have to merge a lot of Hypex structures,
+  you should typically buffer up your merges and then pass them all as a list to
+  this function. This is far more efficient than merging two structures repeatedly.
 
   ## Examples
 
@@ -112,21 +121,26 @@ defmodule Hypex do
       3
 
   """
-  @spec merge([ hypex ]) :: hypex
-  def merge([ { b, _registers } | _ ] = hypices) do
-    unless Enum.all?(hypices, &(match?({ ^b, _ }, &1))) do
+  @spec merge([ hypex :: Hypex.t ]) :: hypex :: Hypex.t
+  def merge([ { _mod, _width, _registers } = hypex ]),
+  do: hypex
+  def merge([ { mod, width, _registers } | _ ] = hypices) do
+    unless Enum.all?(hypices, &(match?({ ^mod, ^width, _ }, &1))) do
       raise ArgumentError, message: @merge_err
     end
 
-    registers = Enum.map(hypices, fn({ _b, registers }) ->
-      :erlang.bitstring_to_list(registers)
+    registers = Enum.map(hypices, fn({ mod, _width, registers }) ->
+      mod.to_list(registers)
     end)
 
-    m_reg = registers |> Util.ziplist |> Enum.reduce(<<>>, fn(bits, register) ->
-      register <> << :lists.max(bits) >>
-    end)
+    m_reg =
+      registers
+      |> Util.ziplist
+      |> Enum.reduce([], &([ :lists.max(&1) | &2 ]))
+      |> Enum.reverse
+      |> mod.from_list
 
-    { b, m_reg }
+    { mod, width, m_reg }
   end
   def merge(_hypices) do
     raise ArgumentError, message: @merge_err
@@ -138,7 +152,7 @@ defmodule Hypex do
   Internally this function just wraps the two instances in a list and passes them
   throguh to `merge/1`.
   """
-  @spec merge(hypex, hypex) :: hypex
+  @spec merge(hypex :: Hypex.t, hypex :: Hypex.t) :: hypex :: Hypex.t
   def merge(h1, h2),
   do: merge([ h1, h2 ])
 
@@ -150,73 +164,33 @@ defmodule Hypex do
   matching to achieve fast speeds.
 
   The main performance hit of this function comes when there's a need to modify
-  a bit inside the bitstring, so we protect against doing this unnecessarily by
+  a bit inside the register, so we protect against doing this unnecessarily by
   pre-determining whether the modification will be a no-op.
 
   ## Examples
 
-      iex> 4 |> Hypex.new |> Hypex.update("one")
-      { 4, << 0, 0, 0, 0, 0, 0, 0, 2 >> }
+      iex> 4 |> Hypex.new(Bitstring) |> Hypex.update("one")
+      { Hypex.Bitstring, 4, << 0, 0, 0, 0, 0, 0, 0, 2 >> }
 
   """
-  @spec update(hypex, any) :: hypex
-  def update({ b, registers } = hypex, value) do
-    << idx :: size(b), rest :: bitstring >> = << :erlang.phash2(value, @max_uniques) :: size(@hash_length) >>
+  @spec update(hypex :: Hypex.t, value :: any) :: hypex :: Hypex.t
+  def update({ mod, width, registers } = hypex, value) do
+    max_uniques = Util.max_uniques()
+    hash_length = Util.hash_length()
 
-    head_length = idx * b
-    << head :: bitstring-size(head_length), current_value :: size(b), tail :: bitstring >> = registers
+    << idx :: size(width), rest :: bitstring >> = << :erlang.phash2(value, max_uniques) :: size(hash_length) >>
 
-    case max(current_value, count_leading_zeros(rest)) do
+    current_value = mod.get_value(registers, idx, width)
+
+    case max(current_value, Util.count_leading_zeros(rest)) do
       ^current_value ->
         hypex
       new_value ->
-        { b, << head :: bitstring, new_value :: size(b), tail :: bitstring >> }
+        { mod, width, mod.set_value(registers, idx, width, new_value) }
     end
   end
   def update(_hypex, _value) do
     raise ArgumentError, message: @update_err
   end
-
-  # Defines the value of `a` per the algorithm definition, with special casing
-  # for when `m` is any of 16, 32 or 64. Anything higher than 128 is calculated
-  # in a general way using the algorithm implementation.
-  defp a(16), do: 0.673
-  defp a(32), do: 0.697
-  defp a(64), do: 0.709
-  defp a(m) when m >= 128, do: 0.7213 / (1 + 1.079 / m)
-
-  # Applies a correction to the raw esimation based on the size of the raw estimate.
-  # The three function heads apply corrections for small/medium/large ranges (top-down).
-  defp apply_correction(zero_count, m, raw_estimate) when raw_estimate <= 5 * m / 2 do
-    case zero_count do
-      0 -> raw_estimate
-      z -> m * :math.log(m / z)
-    end
-  end
-  defp apply_correction(_zero_count, _m, raw_estimate) when raw_estimate <= @max_uniques / 30 do
-    raw_estimate
-  end
-  defp apply_correction(_zero_count, _m, raw_estimate)  do
-    -@max_uniques * :math.log(1 - raw_estimate / @max_uniques)
-  end
-
-  # A small binary reducer to avoid having to convert a bitstring to a list in
-  # order to iterate effectively. This shaves off about half a millisecond of
-  # execution time when operating on a `b = 16` Hypex.
-  defp binary_reduce({ b, registers }, acc, fun) do
-    binary_reduce(b, registers, acc, fun)
-  end
-  defp binary_reduce(_b, <<>>, acc, _fun), do: acc
-  defp binary_reduce(b, registers, acc, fun) do
-    << head :: size(b), rest :: bitstring >> = registers
-    binary_reduce(b, rest, fun.(head, acc), fun)
-  end
-
-  # Counts the leading zeros in a bitstring by walking the entire bitstring. This
-  # sounds horribly expensive but typically a non-zero is hit within a few calls.
-  defp count_leading_zeros(registers, count \\ 1)
-  defp count_leading_zeros(<< 0 :: size(1), rest :: bitstring >>, count),
-  do: count_leading_zeros(rest, count + 1)
-  defp count_leading_zeros(_registers, count), do: count
 
 end

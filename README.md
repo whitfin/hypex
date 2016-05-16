@@ -29,10 +29,12 @@ Hypex is extremely straightforward to use, you simply create a new Hypex instanc
 
 ```elixir
 iex> hypex = Hypex.new(4)
-{ 4, << 0, 0, 0, 0, 0, 0, 0, 0 >> }
+{Hypex.Array, 4, {:array, 16, 0, 0, 100}}
 iex> hypex = Hypex.update(hypex, "my term")
-{ 4, << 0, 0, 0, 0, 0, 3, 0, 0 >> }
-iex> Hypex.cardinality(hypex) |> round
+{Hypex.Array, 4,
+ {:array, 16, 0, 0,
+  {10, {0, 2, 0, 0, 0, 0, 0, 0, 0, 0}, 10, 10, 10, 10, 10, 10, 10, 10, 10}}}
+iex> hypex |> Hypex.cardinality |> round
 1
 ```
 
@@ -40,44 +42,34 @@ The `4` being passed to `Hypex.new/1` is the width which determines the underlyi
 
 For any other examples of how to use Hypex, please read [the documentation](https://hexdocs.pm/hypex/).
 
-## Memory Overhead
+## Memory Optimization
 
-The current implementation is based around the use of a `bitstring` to store the registers, and as such the memory of a Hypex instance is constant. A rough memory estimate (in bytes) can be calculated using the formula `((2 ^ width) * width) / 8` - although this will only include the memory of the registers and not the rest of the tuple structure. This means that using the highest width available of `16`, your memory usage will still only be `131,072` bytes.
+As of `v1.1.0`, the default implementation has moved from a Bitstring to an Erlang Array. This is mainly due to Arrays performing faster on all operations when compared with Bitstrings. However in the case that you're operating in a low-memory environment (or simply want predictable memory usage), you might still wish to use the Bitstring implementation. You can do this by simply using `Hypex.new(4, Bitstring)` when creating a Hypex.
 
-The cost for being so memory efficient is that some operations are (relatively) slow. I'm going to look at providing alternative implementations in future which trade memory for speed, so that there's an implementation for both use cases.
+A rough memory estimate (in bytes) for a Bitstring Hypex can be calculated using the formula `((2 ^ width) * width) / 8` - although this will only include the memory of the registers and not the rest of the tuple structure (which should be minimal). This means that using the highest width available of `16`, your memory usage will still only be `131,072` bytes.
+
+At this point I don't know of a good way to measure the size of the Array implementation, but a rough estimate would suggest that it's probably within the range of 6-8 times more memory (if anyone can help measure, I'd appreciate it). Still, this amount of memory shouldn't pose an issue for most systems, and the throughput likely matters more to most users.
 
 ## Rough Benchmarks
 
-Below are some rough benchmarks for Hypex instances with varying widths. These benchmarks are for reference only and you should gauge which widths work best for the data you're operating with, rather than the performance shown below. Note that the `update/2` tests are inserting a unique value - in the case a duplicate value is inserted, the operation is typically constant across widths at under `0.5 µs/op`.
+Below are some rough benchmarks for Hypex instances with the different underlying structures. Note that the `update/2` tests are inserting a unique value - in the case a duplicate value is inserted, the operation is typically constant across widths at under `0.5 µs/op`.
+
+These tests use a maximum width (16), so it should be noted that smaller widths will have better performance. However, these benchmarks are for reference only and you should gauge which widths work best for the data you're operating with, rather than the performance shown below.
 
 ```
-## Hypex Benchmarks w/ width == 4
+## Array Hypex
 
-Hypex.new/1            0.12 µs/op
-Hypex.update/2         0.71 µs/op
-Hypex.cardinality/1    3.63 µs/op
-Hypex.merge/2          5.19 µs/op
+Array Hypex.new/1                0.38 µs/op
+Array Hypex.update/2             1.59 µs/op
+Array Hypex.cardinality/1        11,470.53 µs/op
+Array Hypex.merge/2              34,329.02 µs/op
 
-## Hypex Benchmarks w/ width == 8
+## Bitstring Hypex
 
-Hypex.new/1            0.44 µs/op
-Hypex.update/2         0.71 µs/op
-Hypex.cardinality/1    51.63 µs/op
-Hypex.merge/2          106.90 µs/op
-
-## Hypex Benchmarks w/ width == 12
-
-Hypex.new/1            3.99 µs/op
-Hypex.update/2         5.88 µs/op
-Hypex.cardinality/1    843.25 µs/op
-Hypex.merge/2          2,973.71 µs/op
-
-## Hypex Benchmarks w/ width == 16
-
-Hypex.new/1            76.64 µs/op
-Hypex.update/2         9.83 µs/op
-Hypex.cardinality/1    12,718.94 µs/op
-Hypex.merge/2          64,585.58 µs/op
+Bitstring Hypex.new/1            77.78 µs/op
+Bitstring Hypex.update/2         10.32 µs/op
+Bitstring Hypex.cardinality/1    12,643.60 µs/op
+Bitstring Hypex.merge/2          67,265.52 µs/op
 ```
 
 ## Contributions
