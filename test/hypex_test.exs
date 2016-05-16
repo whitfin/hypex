@@ -1,20 +1,21 @@
 defmodule HypexTest do
   use PowerAssert
 
-  alias Hypex.{ Array, Bitstring }
+  alias Hypex.Array
+  alias Hypex.Bitstring
 
   test "creating a new default Hypex" do
     Enum.each(4..16, fn(x) ->
       m = TestHelper.calculate_m(x) |> (&(&1 / x)).() |> round
       r = magic_round(m)
-      assert(match?({ Array, ^x, { :array, ^m, 0, 0, ^r } }, Hypex.new(x)))
+      assert(Hypex.new(x) == { Array, x, { :array, m, 0, 0, r } })
     end)
   end
 
   test "creating a new Bitstring Hypex" do
     Enum.each(4..16, fn(x) ->
       m = TestHelper.calculate_m(x)
-      assert(match?({ Bitstring, ^x, << 0 :: size(m) >> }, Hypex.new(x, Hypex.Bitstring)))
+      assert(Hypex.new(x, Hypex.Bitstring) == { Bitstring, x, << 0 :: size(m) >> })
     end)
   end
 
@@ -22,7 +23,7 @@ defmodule HypexTest do
     Enum.each(4..16, fn(x) ->
       m = TestHelper.calculate_m(x) |> (&(&1 / x)).() |> round
       r = magic_round(m)
-      assert(match?({ Array, ^x, { :array, ^m, 0, 0, ^r } }, Hypex.new(x, Hypex.Array)))
+      assert(Hypex.new(x, Hypex.Array) == { Array, x, { :array, m, 0, 0, r } })
     end)
   end
 
@@ -36,7 +37,7 @@ defmodule HypexTest do
   test "creating a new Hypex with no width defaults to using 16" do
     m = TestHelper.calculate_m(16) |> (&(&1 / 16)).() |> round
     r = magic_round(m)
-    assert(match?({ Array, 16, { :array, ^m, 0, 0, ^r } }, Hypex.new()))
+    assert(Hypex.new() == { Array, 16, { :array, m, 0, 0, r } })
   end
 
   test "creating a new Hypex with a seed less than 4" do
