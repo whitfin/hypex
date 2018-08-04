@@ -1,5 +1,5 @@
 defmodule HypexTest do
-  use PowerAssert
+  use ExUnit.Case
 
   alias Hypex.Array
   alias Hypex.Bitstring

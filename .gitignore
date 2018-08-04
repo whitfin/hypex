@@ -1,5 +1,5 @@
 /_build
-/bench
+/benchmarks/output
 /cover
 /deps
 /doc

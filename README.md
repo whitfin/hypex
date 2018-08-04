@@ -1,5 +1,5 @@
 # Hypex
-[![Build Status](https://img.shields.io/travis/zackehh/hypex.svg)](https://travis-ci.org/zackehh/hypex) [![Coverage Status](https://img.shields.io/coveralls/zackehh/hypex.svg)](https://coveralls.io/github/zackehh/hypex) [![Hex.pm Version](https://img.shields.io/hexpm/v/hypex.svg)](https://hex.pm/packages/hypex) [![Documentation](https://img.shields.io/badge/docs-latest-yellowgreen.svg)](https://hexdocs.pm/hypex/)
+[![Build Status](https://img.shields.io/travis/whitfin/hypex.svg)](https://travis-ci.org/whitfin/hypex) [![Coverage Status](https://img.shields.io/coveralls/whitfin/hypex.svg)](https://coveralls.io/github/whitfin/hypex) [![Hex.pm Version](https://img.shields.io/hexpm/v/hypex.svg)](https://hex.pm/packages/hypex) [![Documentation](https://img.shields.io/badge/docs-latest-yellowgreen.svg)](https://hexdocs.pm/hypex/)
 
 Hypex is a fast HyperLogLog implementation in Elixir which provides an easy way to count unique values with a small memory footprint. This library is based on [the paper documenting the algorithm](http://algo.inria.fr/flajolet/Publications/FlFuGaMe07.pdf) written by Philippe Flajolet et al.
 
@@ -7,21 +7,21 @@ Hypex is a fast HyperLogLog implementation in Elixir which provides an easy way 
 
 Hypex is available on [Hex](https://hex.pm/). You can install the package via:
 
-  1. Add hypex to your list of dependencies in `mix.exs`:
+1. Add hypex to your list of dependencies in `mix.exs`:
 
-    ```elixir
-    def deps do
-      [{ :hypex, "~> 1.1.0" }]
-    end
-    ```
+```elixir
+def deps do
+  [{ :hypex, "~> 1.1.0" }]
+end
+```
 
-  2. Ensure hypex is started before your application:
+2. Ensure hypex is started before your application:
 
-    ```elixir
-    def application do
-      [applications: [:hypex]]
-    end
-    ```
+```elixir
+def application do
+  [applications: [:hypex]]
+end
+```
 
 ## Usage
 
@@ -54,22 +54,22 @@ At this point I don't know of a good way to measure the size of the Array implem
 
 Below are some rough benchmarks for Hypex instances with the different underlying structures. Note that the `update/2` tests are inserting a unique value - in the case a duplicate value is inserted, the operation is typically constant across widths at under `0.5 µs/op`.
 
-These tests use a maximum width (16), so it should be noted that smaller widths will have better performance. However, these benchmarks are for reference only and you should gauge which widths work best for the data you're operating with, rather than the performance shown below.
+These tests use a width of 4, so it should be noted that larger widths will have slower performance. However, these benchmarks are for reference only and you should gauge which widths work best for the data you're operating with, rather than the performance shown below.
 
 ```
 ## Array Hypex
 
-Array Hypex.new/1                0.38 µs/op
-Array Hypex.update/2             1.59 µs/op
-Array Hypex.cardinality/1        11,470.53 µs/op
-Array Hypex.merge/2              34,329.02 µs/op
+Array Hypex.new/1                0.53 µs/op
+Array Hypex.update/2             2.13 µs/op
+Array Hypex.cardinality/1        6.87 µs/op
+Array Hypex.merge/2              16.61 µs/op
 
 ## Bitstring Hypex
 
-Bitstring Hypex.new/1            77.78 µs/op
-Bitstring Hypex.update/2         10.32 µs/op
-Bitstring Hypex.cardinality/1    12,643.60 µs/op
-Bitstring Hypex.merge/2          67,265.52 µs/op
+Bitstring Hypex.new/1            0.46 µs/op
+Bitstring Hypex.update/2         2.13 µs/op
+Bitstring Hypex.cardinality/1    6.70 µs/op
+Bitstring Hypex.merge/2          8.69 µs/op
 ```
 
 ## Contributions

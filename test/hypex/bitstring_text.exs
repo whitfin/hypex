@@ -1,5 +1,5 @@
 defmodule Hypex.BitstringTest do
-  use PowerAssert, async: false
+  use ExUnit.Case, async: false
 
   alias Hypex.Bitstring
 

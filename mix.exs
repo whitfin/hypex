@@ -1,6 +1,7 @@
 defmodule Hypex.Mixfile do
   use Mix.Project
 
+  @version "1.1.0"
   @url_docs "http://hexdocs.pm/hypex"
   @url_github "https://github.com/zackehh/hypex"
 
@@ -23,24 +24,24 @@ defmodule Hypex.Mixfile do
         },
         maintainers: [ "Isaac Whitfield" ]
       },
-      version: "1.1.0",
+      version: @version,
       elixir: "~> 1.1",
-      deps: deps,
+      deps: deps(),
       docs: [
         extras: [ "README.md" ],
-        source_ref: "master",
+        source_ref: "v#{@version}",
         source_url: @url_github
       ],
       test_coverage: [
         tool: ExCoveralls
       ],
       preferred_cli_env: [
-        "bench": :test,
-        "coveralls": :test,
+        docs: :docs,
+        bench: :test,
+        coveralls: :test,
         "coveralls.detail": :test,
         "coveralls.html": :test,
-        "coveralls.travis": :test,
-        "docs": :docs
+        "coveralls.travis": :test
       ]
     ]
   end
@@ -63,13 +64,13 @@ defmodule Hypex.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      # documentation
-      { :earmark, "~> 0.2.1",  optional: true, only: :docs },
-      { :ex_doc,  "~> 0.11.4", optional: true, only: :docs },
-      # testing
-      { :benchfella,   "~> 0.3.2", optional: true, only: :test },
-      { :excoveralls,  "~> 0.5.1", optional: true, only: :test },
-      { :power_assert, "~> 0.0.8", optional: true, only: :test }
+      # Testing dependencies
+      {:excoveralls, "~> 0.8", optional: true, only: [:dev, :test]},
+      # Benchmarking dependencies
+      {:benchee, "~> 0.11", optional: true, only: [:bench]},
+      {:benchee_html, "~> 0.4", optional: true, only: [:bench]},
+      # Documentation dependencies
+      {:ex_doc, "~> 0.19", optional: true, only: [:docs]}
     ]
   end
 end
