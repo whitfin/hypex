@@ -11,7 +11,7 @@ Hypex is available on [Hex](https://hex.pm/). You can install the package via:
 
 ```elixir
 def deps do
-  [{ :hypex, "~> 1.1.0" }]
+  [{ :hypex, "~> 1.1" }]
 end
 ```
 
