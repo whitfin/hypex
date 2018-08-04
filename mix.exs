@@ -65,12 +65,12 @@ defmodule Hypex.Mixfile do
   defp deps do
     [
       # Testing dependencies
-      {:excoveralls, "~> 0.6", optional: true, only: [:dev, :test]},
+      {:excoveralls, "~> 0.9", optional: true, only: [:dev, :test]},
       # Benchmarking dependencies
-      {:benchee, "~> 0.11", optional: true, only: [:bench]},
-      {:benchee_html, "~> 0.4", optional: true, only: [:bench]},
+      {:benchee, "~> 0.13", optional: true, only: [:bench]},
+      {:benchee_html, "~> 0.5", optional: true, only: [:bench]},
       # Documentation dependencies
-      {:ex_doc, "~> 0.16", optional: true, only: [:docs]}
+      {:ex_doc, "~> 0.19", optional: true, only: [:docs]}
     ]
   end
 end
