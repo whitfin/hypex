@@ -29,7 +29,9 @@ matrix:
     otp_release: 21.0
   - elixir: 1.2
     otp_release: 20.3
+before_install:
+  - mix local.hex --force
+  - mix local.rebar --force
+  - mix deps.get
 script:
-  - mix test --trace
-after_success:
-  - mix coveralls.travis
+  - mix coveralls.travis --trace
