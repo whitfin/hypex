@@ -70,4 +70,17 @@ defmodule Hypex.Bitstring do
   @spec reduce(bitstring, width :: number, accumulator :: any, (number, any -> any)) :: accumulator :: any
   defdelegate reduce(registers, width, acc, fun), to: Hypex.Util, as: :binary_reduce
 
+  @doc false
+  @spec merge(bitstring, bitstring) :: bitstring
+  def merge(registers1, registers2) do
+    merge2(registers1, registers2) |> from_list()
+  end
+
+  defp merge2(<<value1, registers1::bitstring>>, <<value2, registers2::bitstring>>) do
+    [max(value1, value2) | merge2(registers1, registers2)]
+  end
+
+  defp merge2(<<>>, <<>>) do
+    []
+  end
 end

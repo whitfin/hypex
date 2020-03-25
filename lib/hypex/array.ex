@@ -78,4 +78,19 @@ defmodule Hypex.Array do
     end, acc, registers)
   end
 
+  @doc false
+  @spec merge(array, array) :: array
+  def merge(registers1, registers2) do
+    list1 = to_list(registers1)
+    list2 = to_list(registers2)
+    merge2(list1, list2) |> from_list()
+  end
+
+  defp merge2([value1 | list1], [value2 | list2]) do
+    [max(value1, value2) | merge2(list1, list2)]
+  end
+
+  defp merge2([], []) do
+    []
+  end
 end

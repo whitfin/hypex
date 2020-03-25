@@ -122,27 +122,11 @@ defmodule Hypex do
 
   """
   @spec merge([ hypex :: Hypex.t ]) :: hypex :: Hypex.t
-  def merge([ { _mod, _width, _registers } = hypex ]),
-  do: hypex
-  def merge([ { mod, width, _registers } | _ ] = hypices) do
-    unless Enum.all?(hypices, &(match?({ ^mod, ^width, _ }, &1))) do
-      raise ArgumentError, message: @merge_err
-    end
-
-    registers = Enum.map(hypices, fn({ mod, _width, registers }) ->
-      mod.to_list(registers)
-    end)
-
-    m_reg =
-      registers
-      |> Util.ziplist
-      |> Enum.reduce([], &([ :lists.max(&1) | &2 ]))
-      |> Enum.reverse
-      |> mod.from_list
-
-    { mod, width, m_reg }
+  def merge(hypices) when is_list(hypices) do
+    Enum.reduce(hypices, &merge/2)
   end
-  def merge(_hypices) do
+
+  def merge(_hypex) do
     raise ArgumentError, message: @merge_err
   end
 
@@ -153,8 +137,13 @@ defmodule Hypex do
   throguh to `merge/1`.
   """
   @spec merge(hypex :: Hypex.t, hypex :: Hypex.t) :: hypex :: Hypex.t
-  def merge(h1, h2),
-  do: merge([ h1, h2 ])
+  def merge({mod, width, registers1}, {mod, width, registers2}) do
+    {mod, width, mod.merge(registers1, registers2)}
+  end
+
+  def merge(_hypex1, _hypex2) do
+    raise ArgumentError, message: @merge_err
+  end
 
   @doc """
   Updates a Hypex instance with a value.
