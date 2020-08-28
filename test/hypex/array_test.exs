@@ -13,12 +13,18 @@ defmodule Hypex.ArrayTest do
   test "updating a Hypex with a duplicate value will short-circuit" do
     hypex = Hypex.new(16, Hypex.Array)
 
-    { time1, hypex } = :timer.tc(fn ->
-      Hypex.update(hypex, "Hypex")
+    { time1, _hypex } = :timer.tc(fn ->
+      for _ <- 1..1000 do
+        Hypex.update(hypex, "Hypex")
+      end
     end)
 
+    hypex = Hypex.update(hypex, "Hypex")
+
     { time2, _hypex } = :timer.tc(fn ->
-      Hypex.update(hypex, "Hypex")
+      for _ <- 1..1000 do
+        Hypex.update(hypex, "Hypex")
+      end
     end)
 
     assert(time2 < time1 * 0.75)
