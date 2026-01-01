@@ -1,4 +1,4 @@
-defmodule Hypex.Util do
+defmodule Hypex.Utilities do
   @moduledoc false
   # Provides internal tooling which doesn't fit into the main Hypex module. This
   # module shall remain undocumented as the specifics of this module should not
@@ -37,29 +37,11 @@ defmodule Hypex.Util do
     end
   end
 
-  def apply_correction(_m, raw_estimate, _zero_count) when raw_estimate <= @max_uniques / 30 do
-    raw_estimate
-  end
+  def apply_correction(_m, raw_estimate, _zero_count) when raw_estimate <= @max_uniques / 30,
+    do: raw_estimate
 
-  def apply_correction(_m, raw_estimate, _zero_count) do
-    -@max_uniques * :math.log(1 - raw_estimate / @max_uniques)
-  end
-
-  @doc """
-  A small binary reducer to translate into an accumulator.
-
-  This is to avoid having to convert a bitstring to a list in order to iterate
-  effectively. This shaves off about half a millisecond of execution time when
-  operating on a `b = 16` Hypex.
-  """
-  @spec binary_reduce(input :: bitstring, width :: number, accumulator :: any, function) ::
-          accumulator :: any
-  def binary_reduce(<<>>, _width, acc, _fun), do: acc
-
-  def binary_reduce(input, width, acc, fun) do
-    <<head::size(width), rest::bitstring>> = input
-    binary_reduce(rest, width, fun.(head, acc), fun)
-  end
+  def apply_correction(_m, raw_estimate, _zero_count),
+    do: -@max_uniques * :math.log(1 - raw_estimate / @max_uniques)
 
   @doc """
   Counts the leading zeroes in a bitstring.
@@ -80,26 +62,13 @@ defmodule Hypex.Util do
   Simple accessor for the @hash_length constant.
   """
   @spec hash_length :: length :: number
-  def hash_length, do: @hash_length
+  def hash_length,
+    do: @hash_length
 
   @doc """
   Simple accessor for the @max_uniques constant.
   """
   @spec max_uniques :: combinations :: number
-  def max_uniques, do: @max_uniques
-
-  @doc """
-  Normalizes an Atom to a Hypex register implementation.
-
-  Because `Hypex.Array` holds the default implementations, we just check for any
-  `Hypex.Bitstring` overrides at this point.
-  """
-  @spec normalize_module(module :: atom) :: normalized_module :: atom
-  def normalize_module(mod) when mod in [Array, Hypex.Array, nil],
-    do: Hypex.Array
-
-  def normalize_module(mod) when mod in [Bitstring, Hypex.Bitstring],
-    do: Hypex.Bitstring
-
-  def normalize_module(mod) when is_atom(mod), do: mod
+  def max_uniques,
+    do: @max_uniques
 end

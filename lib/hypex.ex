@@ -9,26 +9,26 @@ defmodule Hypex do
   should only ever be constructed via `Hypex.new/2` otherwise you run the risk of
   pattern matching errors throughout modification.
   """
+  import Record
 
   # alias some internals
-  alias Hypex.Util
+  alias Hypex.Utilities
 
-  # cardinality error
-  @card2_err "Hypex.cardinality/1 requires a valid Hypex instance"
-
-  # merge error
-  @merge_err "Merging requires valid Hypex structures of the same width and type"
-
-  # invalid construction error
-  @range_err "Invalid width provided, must be 16 >= width >= 4"
-
-  # update error
-  @update_err "Hypex.update/2 requires a valid Hypex instance"
+  # record structure
+  defrecord :hypex,
+    mod: nil,
+    width: nil,
+    register: nil
 
   @typedoc """
   A Hypex interface structure
   """
-  @opaque t :: {mod :: term, width :: number, register :: Register.t()}
+  @type t ::
+          record(:hypex,
+            mod: term(),
+            width: number(),
+            register: any()
+          )
 
   @doc """
   Create a new Hypex using a width when `16 >= width >= 4`.
@@ -37,34 +37,27 @@ defmodule Hypex do
   We normalize to ensure we have a valid module and then initialize the module
   with the widths.
 
-  Once the registers are initialized, we return them inside a Tuple alongside
+  Once the register are initialized, we return them inside a Tuple alongside
   the width and module name.
 
   ## Examples
 
       iex> Hypex.new(4)
-      { Hypex.Array, 4, { :array, 16, 0, 0, 100 } }
+      {:hypex, Hypex.Array, 4, {:array, 16, 0, 0, 100}}
 
       iex> Hypex.new(4, Bitstring)
-      { Hypex.Bitstring, 4, << 0, 0, 0, 0, 0, 0, 0, 0 >> }
+      {:hypex, Hypex.Bitstring, 4, <<0, 0, 0, 0, 0, 0, 0, 0>>}
 
   """
-  @spec new(width :: number) :: hypex :: Hypex.t()
-  def new(width \\ 16, mod \\ nil)
-
-  def new(width, mod) when is_integer(width) and width <= 16 and width >= 4 do
-    impl = Util.normalize_module(mod)
-    {impl, width, impl.init(width)}
-  end
-
-  def new(_width, _mod) do
-    raise ArgumentError, message: @range_err
-  end
+  @spec new(width :: number(), mod :: term()) :: hypex :: Hypex.t()
+  def new(width \\ 8, mod \\ Hypex.Register.Array)
+      when is_integer(width) and width <= 16 and width >= 4,
+      do: hypex(mod: mod, width: width, register: mod.init(width))
 
   @doc """
   Calculates a cardinality based upon a passed in Hypex.
 
-  We use the reduce function of the module representing the registers, and track
+  We use the reduce function of the module representing the register, and track
   the number of zeroes alongside the initial value needed to create a raw estimate.
 
   Once we have these values we just apply the correction by using the `m` value,
@@ -80,22 +73,18 @@ defmodule Hypex do
       3
 
   """
-  @spec cardinality(hypex :: Hypex.t()) :: cardinality :: number
-  def cardinality({mod, width, registers} = _hypex) do
+  @spec cardinality(hypex :: Hypex.t()) :: cardinality :: number()
+  def cardinality(hypex(mod: mod, width: width, register: register)) do
     m = :erlang.bsl(1, width)
 
     {value, zeroes} =
-      mod.reduce(registers, width, {0, 0}, fn int, {current, zeroes} ->
+      mod.reduce(register, width, {0, 0}, fn int, {current, zeroes} ->
         {1 / :erlang.bsl(1, int) + current, (int == 0 && zeroes + 1) || zeroes}
       end)
 
-    raw_estimate = Util.a(m) * m * m * 1 / value
+    raw_estimate = Utilities.a(m) * m * m * 1 / value
 
-    Util.apply_correction(m, raw_estimate, zeroes)
-  end
-
-  def cardinality(_hypex) do
-    raise ArgumentError, message: @card2_err
+    Utilities.apply_correction(m, raw_estimate, zeroes)
   end
 
   @doc """
@@ -129,18 +118,15 @@ defmodule Hypex do
   def merge(hypices) when is_list(hypices),
     do: Enum.reduce(hypices, &merge/2)
 
-  def merge(_hypex),
-    do: raise(ArgumentError, message: @merge_err)
-
   @doc """
   Merges together two Hypex instances with the same seed.
   """
   @spec merge(hypex :: Hypex.t(), hypex :: Hypex.t()) :: hypex :: Hypex.t()
-  def merge({mod, width, left}, {mod, width, right}),
-    do: {mod, width, mod.merge(left, right)}
-
-  def merge(_left, _right),
-    do: raise(ArgumentError, message: @merge_err)
+  def merge(
+        hypex(mod: mod, width: width, register: left),
+        hypex(mod: mod, width: width, register: right) = hypex
+      ),
+      do: hypex(hypex, register: mod.merge(left, right))
 
   @doc """
   Updates a Hypex instance with a value.
@@ -160,25 +146,21 @@ defmodule Hypex do
 
   """
   @spec update(hypex :: Hypex.t(), value :: any) :: hypex :: Hypex.t()
-  def update({mod, width, registers} = hypex, value) do
-    max_uniques = Util.max_uniques()
-    hash_length = Util.hash_length()
+  def update(hypex(mod: mod, width: width, register: register) = hypex, value) do
+    max_uniques = Utilities.max_uniques()
+    hash_length = Utilities.hash_length()
 
     <<idx::size(width), rest::bitstring>> =
       <<:erlang.phash2(value, max_uniques)::size(hash_length)>>
 
-    current_value = mod.get_value(registers, idx, width)
+    current_value = mod.get(register, idx, width)
 
-    case max(current_value, Util.count_leading_zeros(rest)) do
+    case max(current_value, Utilities.count_leading_zeros(rest)) do
       ^current_value ->
         hypex
 
       new_value ->
-        {mod, width, mod.set_value(registers, idx, width, new_value)}
+        hypex(hypex, register: mod.put(register, idx, width, new_value))
     end
-  end
-
-  def update(_hypex, _value) do
-    raise ArgumentError, message: @update_err
   end
 end
