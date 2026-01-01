@@ -20,7 +20,7 @@ defmodule Hypex.Bitstring do
   @spec init(number) :: bitstring
   def init(width) do
     m = :erlang.bsl(1, width) * width
-    << 0 :: size(m) >>
+    <<0::size(m)>>
   end
 
   @doc """
@@ -29,7 +29,7 @@ defmodule Hypex.Bitstring do
   We can just delegate to the native Erlang implementation as it provides the
   functionality we need built in.
   """
-  @spec from_list([ bit :: number ]) :: bitstring
+  @spec from_list([bit :: number]) :: bitstring
   defdelegate from_list(bit_list), to: :erlang, as: :list_to_bitstring
 
   @doc """
@@ -38,7 +38,7 @@ defmodule Hypex.Bitstring do
   We can just delegate to the native Erlang implementation as it provides the
   functionality we need built in.
   """
-  @spec to_list(bitstring) :: [ bit :: number ]
+  @spec to_list(bitstring) :: [bit :: number]
   defdelegate to_list(registers), to: :erlang, as: :bitstring_to_list
 
   @doc """
@@ -47,7 +47,7 @@ defmodule Hypex.Bitstring do
   @spec get_value(bitstring, idx :: number, width :: number) :: result :: number
   def get_value(registers, idx, width) do
     head_length = idx * width
-    << _head :: bitstring-size(head_length), value :: size(width), _tail :: bitstring >> = registers
+    <<_head::bitstring-size(head_length), value::size(width), _tail::bitstring>> = registers
     value
   end
 
@@ -57,8 +57,8 @@ defmodule Hypex.Bitstring do
   @spec set_value(bitstring, idx :: number, width :: number, value :: number) :: bitstring
   def set_value(registers, idx, width, value) do
     head_length = idx * width
-    << head :: bitstring-size(head_length), _former :: size(width), tail :: bitstring >> = registers
-    << head :: bitstring, value :: size(width), tail :: bitstring >>
+    <<head::bitstring-size(head_length), _former::size(width), tail::bitstring>> = registers
+    <<head::bitstring, value::size(width), tail::bitstring>>
   end
 
   @doc """
@@ -67,7 +67,21 @@ defmodule Hypex.Bitstring do
   Internally we pass everything to the binary reduction function in the utils
   module, as there's already a native implementation for accumulation.
   """
-  @spec reduce(bitstring, width :: number, accumulator :: any, (number, any -> any)) :: accumulator :: any
+  @spec reduce(bitstring, width :: number, accumulator :: any, (number, any -> any)) ::
+          accumulator :: any
   defdelegate reduce(registers, width, acc, fun), to: Hypex.Util, as: :binary_reduce
 
+  @doc false
+  @spec merge(bitstring, bitstring) :: bitstring
+  def merge(left, right) do
+    left
+    |> merge2(right)
+    |> from_list()
+  end
+
+  defp merge2(<<value1, left::bitstring>>, <<value2, right::bitstring>>),
+    do: [max(value1, value2) | merge2(left, right)]
+
+  defp merge2(<<>>, <<>>),
+    do: []
 end

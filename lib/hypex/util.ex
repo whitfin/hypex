@@ -36,10 +36,12 @@ defmodule Hypex.Util do
       z -> m * :math.log(m / z)
     end
   end
+
   def apply_correction(_m, raw_estimate, _zero_count) when raw_estimate <= @max_uniques / 30 do
     raw_estimate
   end
-  def apply_correction(_m, raw_estimate, _zero_count)  do
+
+  def apply_correction(_m, raw_estimate, _zero_count) do
     -@max_uniques * :math.log(1 - raw_estimate / @max_uniques)
   end
 
@@ -50,10 +52,12 @@ defmodule Hypex.Util do
   effectively. This shaves off about half a millisecond of execution time when
   operating on a `b = 16` Hypex.
   """
-  @spec binary_reduce(input :: bitstring, width :: number, accumulator :: any, function) :: accumulator :: any
+  @spec binary_reduce(input :: bitstring, width :: number, accumulator :: any, function) ::
+          accumulator :: any
   def binary_reduce(<<>>, _width, acc, _fun), do: acc
+
   def binary_reduce(input, width, acc, fun) do
-    << head :: size(width), rest :: bitstring >> = input
+    <<head::size(width), rest::bitstring>> = input
     binary_reduce(rest, width, fun.(head, acc), fun)
   end
 
@@ -66,8 +70,10 @@ defmodule Hypex.Util do
   """
   @spec count_leading_zeros(input :: bitstring, count :: number) :: total :: number
   def count_leading_zeros(input, count \\ 1)
-  def count_leading_zeros(<< 0 :: size(1), rest :: bitstring >>, count),
-  do: count_leading_zeros(rest, count + 1)
+
+  def count_leading_zeros(<<0::size(1), rest::bitstring>>, count),
+    do: count_leading_zeros(rest, count + 1)
+
   def count_leading_zeros(_input, count), do: count
 
   @doc """
@@ -89,41 +95,11 @@ defmodule Hypex.Util do
   `Hypex.Bitstring` overrides at this point.
   """
   @spec normalize_module(module :: atom) :: normalized_module :: atom
-  def normalize_module(mod) when mod in [ Array, Hypex.Array, nil ],
-  do: Hypex.Array
-  def normalize_module(mod) when mod in [ Bitstring, Hypex.Bitstring ],
-  do: Hypex.Bitstring
+  def normalize_module(mod) when mod in [Array, Hypex.Array, nil],
+    do: Hypex.Array
+
+  def normalize_module(mod) when mod in [Bitstring, Hypex.Bitstring],
+    do: Hypex.Bitstring
+
   def normalize_module(mod) when is_atom(mod), do: mod
-
-  @doc """
-  Zips corresponding elements from each list in list_of_lists.
-
-  This function acts in an identical way to `List.zip/1` except that the zipped
-  values are lists rather than tuples. This is because Hypex merge performance
-  can be improved without the jumps to/from Tuple structures.
-  """
-  @spec ziplist(lists :: [ ]) :: zipped_list :: []
-  def ziplist(list_of_lists) when is_list(list_of_lists),
-  do: zip(list_of_lists, [])
-
-  # The internal zip of `ziplist/1`, accepting a list and an accumulator. This
-  # function will move through each list and blend each index into a single list
-  # in which each index is grouped as a list.
-  #
-  # This implementation contains slight optimizations for the Hypex use case vs
-  # the implementation inside the `List` module.
-  defp zip(list, acc) do
-    case :lists.mapfoldl(&zip_each/2, [], list) do
-      { _, nil } ->
-        :lists.reverse(acc)
-      { mlist, heads } ->
-        zip(mlist, [heads | acc])
-    end
-  end
-
-  # The handlers for the `:lists.mapfoldl/3` call inside `zip/2`. If we reach
-  # the end of a list, we pass back a set of `nil` tuples to avoid continuing.
-  defp zip_each([h | t], acc), do: { t, [h | acc] }
-  defp zip_each(_lists, _acc), do: { nil, nil }
-
 end

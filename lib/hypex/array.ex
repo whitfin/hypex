@@ -25,7 +25,7 @@ defmodule Hypex.Array do
   def init(width) do
     1
     |> :erlang.bsl(width)
-    |> :array.new({ :default, 0 })
+    |> :array.new({:default, 0})
   end
 
   @doc """
@@ -33,11 +33,11 @@ defmodule Hypex.Array do
 
   The Array has it's size fixed before being returned just for some extra safety.
   """
-  @spec from_list([ bit :: number ]) :: array
+  @spec from_list([bit :: number]) :: array
   def from_list(bits) do
     bits
     |> :array.from_list(0)
-    |> :array.fix
+    |> :array.fix()
   end
 
   @doc """
@@ -46,7 +46,7 @@ defmodule Hypex.Array do
   We can just delegate to the internal Array implementation as it provides the
   functionality we need built in.
   """
-  @spec to_list(array) :: [ bit :: number ]
+  @spec to_list(array) :: [bit :: number]
   defdelegate to_list(registers), to: :array, as: :to_list
 
   @doc """
@@ -71,11 +71,30 @@ defmodule Hypex.Array do
   Internally we pass everything to `:array.foldl/3`, as there's already a native
   implementation for accumulation.
   """
-  @spec reduce(array, width :: number, accumulator :: any, (number, any -> any)) :: accumulator :: any
+  @spec reduce(array, width :: number, accumulator :: any, (number, any -> any)) ::
+          accumulator :: any
   def reduce(registers, _width, acc, fun) do
-    :array.foldl(fn(_, int, acc) ->
-      fun.(int, acc)
-    end, acc, registers)
+    :array.foldl(
+      fn _, int, acc ->
+        fun.(int, acc)
+      end,
+      acc,
+      registers
+    )
   end
 
+  @doc false
+  @spec merge(array, array) :: array
+  def merge(left, right) do
+    left
+    |> to_list
+    |> merge2(to_list(right))
+    |> from_list()
+  end
+
+  defp merge2([value1 | list1], [value2 | list2]),
+    do: [max(value1, value2) | merge2(list1, list2)]
+
+  defp merge2([], []),
+    do: []
 end

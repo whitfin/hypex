@@ -28,7 +28,7 @@ defmodule Hypex do
   @typedoc """
   A Hypex interface structure
   """
-  @opaque t :: { mod :: term, width :: number, register :: Register.t }
+  @opaque t :: {mod :: term, width :: number, register :: Register.t()}
 
   @doc """
   Create a new Hypex using a width when `16 >= width >= 4`.
@@ -49,12 +49,14 @@ defmodule Hypex do
       { Hypex.Bitstring, 4, << 0, 0, 0, 0, 0, 0, 0, 0 >> }
 
   """
-  @spec new(width :: number) :: hypex :: Hypex.t
+  @spec new(width :: number) :: hypex :: Hypex.t()
   def new(width \\ 16, mod \\ nil)
+
   def new(width, mod) when is_integer(width) and width <= 16 and width >= 4 do
     impl = Util.normalize_module(mod)
-    { impl, width, impl.init(width) }
+    {impl, width, impl.init(width)}
   end
+
   def new(_width, _mod) do
     raise ArgumentError, message: @range_err
   end
@@ -78,18 +80,20 @@ defmodule Hypex do
       3
 
   """
-  @spec cardinality(hypex :: Hypex.t) :: cardinality :: number
-  def cardinality({ mod, width, registers } = _hypex) do
+  @spec cardinality(hypex :: Hypex.t()) :: cardinality :: number
+  def cardinality({mod, width, registers} = _hypex) do
     m = :erlang.bsl(1, width)
 
-    { value, zeroes } = mod.reduce(registers, width, { 0, 0 }, fn(int, { current, zeroes }) ->
-      { 1 / :erlang.bsl(1, int) + current, int == 0 && zeroes + 1 || zeroes }
-    end)
+    {value, zeroes} =
+      mod.reduce(registers, width, {0, 0}, fn int, {current, zeroes} ->
+        {1 / :erlang.bsl(1, int) + current, (int == 0 && zeroes + 1) || zeroes}
+      end)
 
     raw_estimate = Util.a(m) * m * m * 1 / value
 
     Util.apply_correction(m, raw_estimate, zeroes)
   end
+
   def cardinality(_hypex) do
     raise ArgumentError, message: @card2_err
   end
@@ -121,40 +125,22 @@ defmodule Hypex do
       3
 
   """
-  @spec merge([ hypex :: Hypex.t ]) :: hypex :: Hypex.t
-  def merge([ { _mod, _width, _registers } = hypex ]),
-  do: hypex
-  def merge([ { mod, width, _registers } | _ ] = hypices) do
-    unless Enum.all?(hypices, &(match?({ ^mod, ^width, _ }, &1))) do
-      raise ArgumentError, message: @merge_err
-    end
+  @spec merge([hypex :: Hypex.t()]) :: hypex :: Hypex.t()
+  def merge(hypices) when is_list(hypices),
+    do: Enum.reduce(hypices, &merge/2)
 
-    registers = Enum.map(hypices, fn({ mod, _width, registers }) ->
-      mod.to_list(registers)
-    end)
-
-    m_reg =
-      registers
-      |> Util.ziplist
-      |> Enum.reduce([], &([ :lists.max(&1) | &2 ]))
-      |> Enum.reverse
-      |> mod.from_list
-
-    { mod, width, m_reg }
-  end
-  def merge(_hypices) do
-    raise ArgumentError, message: @merge_err
-  end
+  def merge(_hypex),
+    do: raise(ArgumentError, message: @merge_err)
 
   @doc """
   Merges together two Hypex instances with the same seed.
-
-  Internally this function just wraps the two instances in a list and passes them
-  throguh to `merge/1`.
   """
-  @spec merge(hypex :: Hypex.t, hypex :: Hypex.t) :: hypex :: Hypex.t
-  def merge(h1, h2),
-  do: merge([ h1, h2 ])
+  @spec merge(hypex :: Hypex.t(), hypex :: Hypex.t()) :: hypex :: Hypex.t()
+  def merge({mod, width, left}, {mod, width, right}),
+    do: {mod, width, mod.merge(left, right)}
+
+  def merge(_left, _right),
+    do: raise(ArgumentError, message: @merge_err)
 
   @doc """
   Updates a Hypex instance with a value.
@@ -173,24 +159,26 @@ defmodule Hypex do
       { Hypex.Bitstring, 4, << 0, 0, 0, 0, 0, 0, 0, 2 >> }
 
   """
-  @spec update(hypex :: Hypex.t, value :: any) :: hypex :: Hypex.t
-  def update({ mod, width, registers } = hypex, value) do
+  @spec update(hypex :: Hypex.t(), value :: any) :: hypex :: Hypex.t()
+  def update({mod, width, registers} = hypex, value) do
     max_uniques = Util.max_uniques()
     hash_length = Util.hash_length()
 
-    << idx :: size(width), rest :: bitstring >> = << :erlang.phash2(value, max_uniques) :: size(hash_length) >>
+    <<idx::size(width), rest::bitstring>> =
+      <<:erlang.phash2(value, max_uniques)::size(hash_length)>>
 
     current_value = mod.get_value(registers, idx, width)
 
     case max(current_value, Util.count_leading_zeros(rest)) do
       ^current_value ->
         hypex
+
       new_value ->
-        { mod, width, mod.set_value(registers, idx, width, new_value) }
+        {mod, width, mod.set_value(registers, idx, width, new_value)}
     end
   end
+
   def update(_hypex, _value) do
     raise ArgumentError, message: @update_err
   end
-
 end
