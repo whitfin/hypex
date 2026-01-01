@@ -1,7 +1,7 @@
 defmodule Hypex.Mixfile do
   use Mix.Project
 
-  @version "1.1.1"
+  @version "2.0.0"
   @url_docs "http://hexdocs.pm/hypex"
   @url_github "https://github.com/zackehh/hypex"
 
