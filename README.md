@@ -34,15 +34,7 @@ You can control the underlying storage register via the second parameter of `Hyp
 
 For any other examples of how to use Hypex, please read [the documentation](https://hexdocs.pm/hypex/).
 
-## Memory Optimization
-
-As of `v1.1.0`, the default implementation has moved from a Bitstring to an Erlang Array. This is mainly due to Arrays performing faster on all operations when compared with Bitstrings. However in the case that you're operating in a low-memory environment (or simply want predictable memory usage), you might still wish to use the Bitstring implementation. You can do this by simply using `Hypex.new(4, Bitstring)` when creating a Hypex.
-
-A rough memory estimate (in bytes) for a Bitstring Hypex can be calculated using the formula `((2 ^ width) * width) / 8` - although this will only include the memory of the registers and not the rest of the tuple structure (which should be minimal). This means that using the highest width available of `16`, your memory usage will still only be `131,072` bytes.
-
-At this point I don't know of a good way to measure the size of the Array implementation, but a rough estimate would suggest that it's probably within the range of 6-8 times more memory (if anyone can help measure, I'd appreciate it). Still, this amount of memory shouldn't pose an issue for most systems, and the throughput likely matters more to most users.
-
-## Rough Benchmarks
+## Register Benchmarks
 
 Below are some rough benchmarks for the different Hypex registers. Any tests with updates will be inserting a unique value; a duplicate value is significantly faster due to skipping modifications. These tests use a width of 8, and it should be noted that the width heavily impacts these numbers. The smallest widths (4) are measured in `ns` rather than `μs`, whereas the largest widths (16) are typically in the millisecond range for cardinality calculations.
 
