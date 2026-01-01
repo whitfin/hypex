@@ -1,5 +1,5 @@
 # Hypex
-[![Build Status](https://img.shields.io/travis/whitfin/hypex.svg)](https://travis-ci.org/whitfin/hypex) [![Coverage Status](https://img.shields.io/coveralls/whitfin/hypex.svg)](https://coveralls.io/github/whitfin/hypex) [![Hex.pm Version](https://img.shields.io/hexpm/v/hypex.svg)](https://hex.pm/packages/hypex) [![Documentation](https://img.shields.io/badge/docs-latest-yellowgreen.svg)](https://hexdocs.pm/hypex/)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/whitfin/hypex/ci.yml?branch=main)](https://github.com/whitfin/hypex/actions) [![Coverage Status](https://img.shields.io/coveralls/whitfin/hypex.svg)](https://coveralls.io/github/whitfin/hypex) [![Hex.pm Version](https://img.shields.io/hexpm/v/hypex.svg)](https://hex.pm/packages/hypex) [![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://hexdocs.pm/hypex/)
 
 Hypex is a fast HyperLogLog implementation in Elixir which provides an easy way to count unique values with a small memory footprint. This library is based on [the paper documenting the algorithm](http://algo.inria.fr/flajolet/Publications/FlFuGaMe07.pdf) written by Philippe Flajolet et al.
 

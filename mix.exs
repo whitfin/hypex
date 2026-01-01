@@ -17,18 +17,18 @@ defmodule Hypex.Mixfile do
           "LICENSE",
           "README.md"
         ],
-        licenses: [ "MIT" ],
+        licenses: ["MIT"],
         links: %{
           "Docs" => @url_docs,
           "GitHub" => @url_github
         },
-        maintainers: [ "Isaac Whitfield" ]
+        maintainers: ["Isaac Whitfield"]
       },
       version: @version,
       elixir: "~> 1.1",
       deps: deps(),
       docs: [
-        extras: [ "README.md" ],
+        extras: ["README.md"],
         source_ref: "v#{@version}",
         source_url: @url_github
       ],
@@ -37,20 +37,15 @@ defmodule Hypex.Mixfile do
       ],
       preferred_cli_env: [
         docs: :docs,
-        bench: :test,
-        coveralls: :test,
-        "coveralls.detail": :test,
-        "coveralls.html": :test,
-        "coveralls.travis": :test
+        bench: :bench,
+        coveralls: :cover,
+        "coveralls.github": :cover,
+        "coveralls.html": :cover
+      ],
+      aliases: [
+        bench: "run benchmarks/main.exs"
       ]
     ]
-  end
-
-  # Configuration for the OTP application
-  #
-  # Type "mix help compile.app" for more information
-  def application do
-    [applications: [:logger]]
   end
 
   # Dependencies can be Hex packages:
@@ -65,12 +60,12 @@ defmodule Hypex.Mixfile do
   defp deps do
     [
       # Testing dependencies
-      {:excoveralls, "~> 0.9", optional: true, only: [:dev, :test]},
+      {:excoveralls, "~> 0.15", optional: true, only: [:cover]},
       # Benchmarking dependencies
-      {:benchee, "~> 0.13", optional: true, only: [:bench]},
-      {:benchee_html, "~> 0.5", optional: true, only: [:bench]},
+      {:benchee, "~> 1.1", optional: true, only: [:bench]},
+      {:benchee_html, "~> 1.0", optional: true, only: [:bench]},
       # Documentation dependencies
-      {:ex_doc, "~> 0.19", optional: true, only: [:docs]}
+      {:ex_doc, "~> 0.29", optional: true, only: [:docs]}
     ]
   end
 end
