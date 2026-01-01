@@ -136,6 +136,13 @@ defmodule Hypex.RegisterTest do
     assert Hypex.cardinality(hypex) == 38.28518367014784
   end
 
+  defp calculate_m(b) do
+    2
+    |> :math.pow(b)
+    |> round
+    |> (&(&1 * b)).()
+  end
+
   defp convert_bitstring_register(Hypex.Register.Array, width, input) do
     Hypex.Register.List
     |> convert_bitstring_register(width, input)
@@ -157,13 +164,6 @@ defmodule Hypex.RegisterTest do
       |> Integer.parse(2)
       |> Kernel.elem(0)
     end)
-  end
-
-  defp calculate_m(b) do
-    2
-    |> :math.pow(b)
-    |> round
-    |> (&(&1 * b)).()
   end
 
   defp reduce(<<>>, acc), do: acc |> Enum.reverse()
