@@ -25,7 +25,7 @@ defmodule Hypex.Mixfile do
         maintainers: ["Isaac Whitfield"]
       },
       version: @version,
-      elixir: "~> 1.1",
+      elixir: "~> 1.12",
       deps: deps(),
       docs: [
         extras: ["README.md"],
