@@ -15,7 +15,7 @@ end
 
 ## Usage
 
-Hypex is extremely straightforward to use, you simply create a new Hypex instance and start adding values to it:
+Hypex is extremely straightforward to use, you simply create a new Hypex record and start adding values to it:
 
 ```elixir
 iex> hypex = Hypex.new(4)
