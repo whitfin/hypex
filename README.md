@@ -9,7 +9,7 @@ Hypex is available on [Hex](https://hex.pm/). You can install the package via:
 
 ```elixir
 def deps do
-  [{ :hypex, "~> 2.0" }]
+  [{ :hypex, "~> 2.1" }]
 end
 ```
 
