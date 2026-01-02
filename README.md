@@ -34,9 +34,19 @@ You can control the underlying storage register via the second parameter of `Hyp
 
 For any other examples of how to use Hypex, please read [the documentation](https://hexdocs.pm/hypex/).
 
-## Register Benchmarks
+## Registers
 
-Below are some rough benchmarks for the different Hypex registers. Any tests with updates will be inserting a unique value; a duplicate value is significantly faster due to skipping modifications. These tests use a width of 8, and it should be noted that the width heavily impacts these numbers. The smallest widths (4) are measured in `ns` rather than `μs`, whereas the largest widths (16) are typically in the millisecond range for cardinality calculations.
+In most cases it won't matter which register you choose, so it's a good idea to start with the default until you see some reason to change. If you would like some very rough guidance, here are some simple characteristics:
+
+* `Array` is the best general purpose, scaling well to all of cardinality, memory and width
+* `Bitstring` is the most memory efficient, and scales very well for cardinality and width
+* `List` is good for small widths (i.e. up to 10) and is more inspectable and debuggable
+* `Map` is sparse with fast writes, can be good for low-to-medium cardinality use cases
+* `Tuple` is very quick access for read-heavy use cases of small width (i.e. up to 12)
+
+These guidelines are based on Elixir 1.19; it's possible that they display different characteristics on earlier Elixir/OTP versions. Make sure to measure inside your application using your real traffic and data!
+
+Below are some rough benchmarks for the different Hypex registers; these benchmarks can be found in the repository. Any metrics with updates will be inserting a unique value, as a duplicate value is significantly faster due to skipping modification:
 
 ```
 ## Hypex (Array)
@@ -75,15 +85,7 @@ Tuple Hypex.cardinality/1        1.41 μs/op
 Tuple Hypex.merge/2              1.90 μs/op
 ```
 
-In most cases it won't matter which register you choose, so it's a good idea to start with the default until you see some reason to change. If you would like some very rough guidance, here are some simple characteristics:
-
-* `Array` is the best general purpose, scaling well to all of cardinality, memory and width
-* `Bitstring` is the most memory efficient, and scales very well for cardinality and width
-* `List` is good for small widths (i.e. up to 10) and is more inspectable and debuggable
-* `Map` is sparse with fast writes, can be good for low-to-medium cardinality use cases
-* `Tuple` is very quick access for read-heavy use cases of small width (i.e. up to 12)
-
-These guidelines are based on Elixir 1.19; it's possible that they display different characteristics on earlier Elixir/OTP versions. Make sure to measure inside your application using your real traffic and data!
+These tests use a width of 8, and it should be noted that the width heavily impacts these numbers. The smallest widths (4) are measured in `ns` rather than `μs`, whereas the largest widths (16) are typically in the millisecond range for cardinality calculations.
 
 ## Contributions
 
