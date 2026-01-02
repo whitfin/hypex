@@ -2,12 +2,14 @@ defmodule Hypex.Register.Array do
   @moduledoc """
   A `Hypex.Register` implementation using an Erlang `:array`.
 
-  This register currently provides the best average update performance, which is
-  generally the most important consideration when using HLL. It is for this reason
-  that this register is the default implementation for a `Hypex`.
+  Arrays offer the best average throughput and scale well to various widths and
+  cardinalities. For this reason this register is the default chosen when non
+  is explicitly requested.
 
-  This register will likely use a little more memory than others, due to the nature
-  of arrays as laid out inside Erlang memory.
+  This register will scale to many use cases, and should be a solid choice for
+  many users as a balance of memory, throughput and flexibility.
+
+  Recommended for general usage or when traffic patterns are less defined.
   """
   @behaviour Hypex.Register
 

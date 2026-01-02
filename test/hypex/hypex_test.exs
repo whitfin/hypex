@@ -6,7 +6,9 @@ defmodule Hypex.RegisterTest do
     parameterize: [
       %{mod: Hypex.Register.Array},
       %{mod: Hypex.Register.Bitstring},
-      %{mod: Hypex.Register.List}
+      %{mod: Hypex.Register.List},
+      %{mod: Hypex.Register.Map},
+      %{mod: Hypex.Register.Tuple}
     ]
 
   test "creating a new default Hypex" do
@@ -99,8 +101,10 @@ defmodule Hypex.RegisterTest do
   end
 
   test "cardinality correctly handles large ranges", %{mod: mod} do
-    arr = convert_bitstring_register(mod, 10, read_large_register())
-    hypex = hypex(mod: mod, width: 10, register: arr)
+    hypex =
+      10
+      |> Hypex.new(mod)
+      |> with_register(read_large_register())
 
     cardinality =
       hypex
@@ -127,11 +131,9 @@ defmodule Hypex.RegisterTest do
 
   test "cardinality with no zeros returns the estimate", %{mod: mod} do
     hypex =
-      hypex(
-        mod: mod,
-        width: 4,
-        register: convert_bitstring_register(mod, 4, <<30, 30, 67, 33, 34, 33, 65, 33>>)
-      )
+      4
+      |> Hypex.new(mod)
+      |> with_register(<<30, 30, 67, 33, 34, 33, 65, 33>>)
 
     assert Hypex.cardinality(hypex) == 38.28518367014784
   end
@@ -141,29 +143,6 @@ defmodule Hypex.RegisterTest do
     |> :math.pow(b)
     |> round
     |> (&(&1 * b)).()
-  end
-
-  defp convert_bitstring_register(Hypex.Register.Array, width, input) do
-    Hypex.Register.List
-    |> convert_bitstring_register(width, input)
-    |> :array.from_list(0)
-    |> :array.fix()
-  end
-
-  defp convert_bitstring_register(Hypex.Register.Bitstring, _width, input) do
-    input
-  end
-
-  defp convert_bitstring_register(Hypex.Register.List, width, input) do
-    input
-    |> reduce([])
-    |> Enum.chunk_every(width)
-    |> Enum.map(fn x ->
-      x
-      |> Enum.join("")
-      |> Integer.parse(2)
-      |> Kernel.elem(0)
-    end)
   end
 
   defp reduce(<<>>, acc), do: acc |> Enum.reverse()
@@ -188,5 +167,24 @@ defmodule Hypex.RegisterTest do
       |> Kernel.elem(0)
     end)
     |> :erlang.list_to_bitstring()
+  end
+
+  defp with_register(hypex(mod: mod, width: width, register: register) = hypex, input) do
+    register =
+      input
+      |> reduce([])
+      |> Enum.chunk_every(width)
+      |> Enum.map(fn x ->
+        x
+        |> Enum.join("")
+        |> Integer.parse(2)
+        |> Kernel.elem(0)
+      end)
+      |> Enum.with_index()
+      |> Enum.reduce(register, fn {value, index}, register ->
+        mod.put(register, index, width, value)
+      end)
+
+    hypex(hypex, register: register)
   end
 end

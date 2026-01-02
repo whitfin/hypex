@@ -6,9 +6,7 @@ defmodule Hypex.Register.Bitstring do
   performance. You should consider this register when memory constraints are an
   important factor.
 
-  Write speed is pretty good, albeit slower than `Hypex.Register.Array`. Reading
-  back a cardinality value is a little slower than other registers, but is likely
-  not a significant difference in the real world.
+  Recommended for larger widths, or when memory efficiency is a major concern.
   """
   @behaviour Hypex.Register
 

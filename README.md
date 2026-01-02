@@ -41,31 +41,47 @@ Below are some rough benchmarks for the different Hypex registers. Any tests wit
 ```
 ## Hypex (Array)
 
-Array Hypex.new/1               0.09 μs/op
-Array Hypex.update/2            0.35 μs/op
-Array Hypex.cardinality/1       4.56 μs/op
-Array Hypex.merge/2             9.09 μs/op
+Array Hypex.new/1               0.02 μs/op
+Array Hypex.update/2            0.15 μs/op
+Array Hypex.cardinality/1       1.89 μs/op
+Array Hypex.merge/2             4.20 μs/op
 
 ## Hypex (Bitstring)
 
-Bitstring Hypex.new/1           0.17 μs/op
-Bitstring Hypex.update/2        0.31 μs/op
-Bitstring Hypex.cardinality/1   8.47 μs/op
-Bitstring Hypex.merge/2         9.09 μs/op
+Bitstring Hypex.new/1           0.07 μs/op
+Bitstring Hypex.update/2        0.14 μs/op
+Bitstring Hypex.cardinality/1   3.58 μs/op
+Bitstring Hypex.merge/2         2.71 μs/op
 
 ## Hypex (List)
 
-List Hypex.new/1                0.74 μs/op
-List Hypex.update/2             1.13 μs/op
-List Hypex.cardinality/1        3.16 μs/op
-List Hypex.merge/2              5.53 μs/op
+List Hypex.new/1                0.33 μs/op
+List Hypex.update/2             0.55 μs/op
+List Hypex.cardinality/1        1.32 μs/op
+List Hypex.merge/2              2.42 μs/op
+
+## Hypex (Map)
+
+Map Hypex.new/1                 0.01 μs/op
+Map Hypex.update/2              0.09 μs/op
+Map Hypex.cardinality/1         2.00 μs/op
+Map Hypex.merge/2               0.09 μs/op
+
+## Hypex (Tuple)
+
+Tuple Hypex.new/1                0.72 μs/op
+Tuple Hypex.update/2             0.14 μs/op
+Tuple Hypex.cardinality/1        1.42 μs/op
+Tuple Hypex.merge/2              1.90 μs/op
 ```
 
-In most cases it won't matter which register you choose, so it's a good idea to start with the default until you see some reason to change. If you would like some very rough guidance, here are some simple rules:
+In most cases it won't matter which register you choose, so it's a good idea to start with the default until you see some reason to change. If you would like some very rough guidance, here are some simple characteristics:
 
-* If you're using low `width` values, use `Hypex.Register.List`
-* If you're trying to minimize memory, use `Hypex.Register.Bitstring`
-* For anything else, use `Hypex.Register.Array` (the current default)
+* `Array` is the best general purpose, scaling well to all of cardinality, memory and width
+* `Bitstring` is the most memory efficient, and scales very well for cardinality and width
+* `List` is good for small widths (i.e. up to 10) and is more inspectable and debuggable
+* `Map` is sparse and has fast access, good for low-to-medium cardinality use cases
+* `Tuple` is very quick access for read-heavy use cases of small width (i.e. up to 12)
 
 These guidelines are based on Elixir 1.19; it's possible that they display different characteristics on earlier Elixir/OTP versions. Make sure to measure inside your application using your real traffic and data!
 
@@ -75,7 +91,7 @@ If you feel something can be improved, or have any questions about certain behav
 
 If you *do* make changes to the codebase, please make sure you test your changes thoroughly, and include any unit tests alongside new or changed behaviours. Hypex currently uses the excellent [excoveralls](https://github.com/parroty/excoveralls) to track code coverage.
 
-```
+```bash
 $ mix test
 $ mix coveralls
 $ mix coveralls.html && open cover/excoveralls.html
