@@ -25,15 +25,12 @@ defmodule Hypex.Register.Map do
   """
   @spec get(t(), index :: number(), width :: number()) :: result :: number()
   def get(register, index, _width),
-    do: Map.get(register, index)
+    do: Map.get(register, index, 0)
 
   @doc """
   Set a specific bit in a register.
   """
   @spec put(t(), index :: number(), width :: number(), value :: number()) :: t()
-  def put(register, index, _width, 0),
-    do: Map.delete(register, index)
-
   def put(register, index, _width, value),
     do: Map.put(register, index, value)
 
@@ -50,9 +47,14 @@ defmodule Hypex.Register.Map do
   @spec reduce(t(), width :: number(), accumulator :: any(), (number, any -> any)) ::
           accumulator :: any()
   def reduce(register, width, acc, fun) do
-    Enum.reduce(0..(:erlang.bsl(1, width) - 1), acc, fn index, acc ->
-      value = Map.get(register, index, 0)
-      fun.(value, acc)
-    end)
+    size = :erlang.bsl(1, width)
+    zeroes = size - map_size(register)
+
+    acc =
+      Enum.reduce(register, acc, fn {_key, value}, acc ->
+        fun.(value, acc)
+      end)
+
+    Enum.reduce(1..zeroes//1, acc, fn _, acc -> fun.(0, acc) end)
   end
 end

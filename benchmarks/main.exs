@@ -5,7 +5,7 @@ init_hypex = fn mod ->
 
   {
     hypex,
-    Enum.reduce(0..25000, hypex, fn val, acc ->
+    Enum.reduce(0..25_000, hypex, fn val, acc ->
       Hypex.update(acc, "key_#{val}")
     end)
   }

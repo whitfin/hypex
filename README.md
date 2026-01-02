@@ -42,36 +42,36 @@ Below are some rough benchmarks for the different Hypex registers. Any tests wit
 ## Hypex (Array)
 
 Array Hypex.new/1               0.02 μs/op
-Array Hypex.update/2            0.15 μs/op
+Array Hypex.update/2            0.17 μs/op
 Array Hypex.cardinality/1       1.89 μs/op
-Array Hypex.merge/2             4.20 μs/op
+Array Hypex.merge/2             3.91 μs/op
 
 ## Hypex (Bitstring)
 
 Bitstring Hypex.new/1           0.07 μs/op
 Bitstring Hypex.update/2        0.14 μs/op
-Bitstring Hypex.cardinality/1   3.58 μs/op
-Bitstring Hypex.merge/2         2.71 μs/op
+Bitstring Hypex.cardinality/1   3.60 μs/op
+Bitstring Hypex.merge/2         2.65 μs/op
 
 ## Hypex (List)
 
 List Hypex.new/1                0.33 μs/op
-List Hypex.update/2             0.55 μs/op
-List Hypex.cardinality/1        1.32 μs/op
-List Hypex.merge/2              2.42 μs/op
+List Hypex.update/2             0.53 μs/op
+List Hypex.cardinality/1        1.27 μs/op
+List Hypex.merge/2              2.40 μs/op
 
 ## Hypex (Map)
 
 Map Hypex.new/1                 0.01 μs/op
-Map Hypex.update/2              0.09 μs/op
-Map Hypex.cardinality/1         2.00 μs/op
-Map Hypex.merge/2               0.09 μs/op
+Map Hypex.update/2              0.10 μs/op
+Map Hypex.cardinality/1         2.75 μs/op
+Map Hypex.merge/2               0.05 μs/op
 
 ## Hypex (Tuple)
 
-Tuple Hypex.new/1                0.72 μs/op
+Tuple Hypex.new/1                0.68 μs/op
 Tuple Hypex.update/2             0.14 μs/op
-Tuple Hypex.cardinality/1        1.42 μs/op
+Tuple Hypex.cardinality/1        1.41 μs/op
 Tuple Hypex.merge/2              1.90 μs/op
 ```
 
@@ -80,7 +80,7 @@ In most cases it won't matter which register you choose, so it's a good idea to 
 * `Array` is the best general purpose, scaling well to all of cardinality, memory and width
 * `Bitstring` is the most memory efficient, and scales very well for cardinality and width
 * `List` is good for small widths (i.e. up to 10) and is more inspectable and debuggable
-* `Map` is sparse and has fast access, good for low-to-medium cardinality use cases
+* `Map` is sparse with fast writes, can be good for low-to-medium cardinality use cases
 * `Tuple` is very quick access for read-heavy use cases of small width (i.e. up to 12)
 
 These guidelines are based on Elixir 1.19; it's possible that they display different characteristics on earlier Elixir/OTP versions. Make sure to measure inside your application using your real traffic and data!
